@@ -1,0 +1,11 @@
+-- +goose Up
+CREATE TABLE gem_categories (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    category_name VARCHAR(100) UNIQUE NOT NULL,
+    slug VARCHAR(100) UNIQUE NOT NULL,
+    description TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+-- +goose Down
+DROP TABLE gem_categories;
