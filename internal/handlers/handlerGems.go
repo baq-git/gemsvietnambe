@@ -14,21 +14,21 @@ import (
 
 type Gem struct {
 	ID            uuid.UUID `json:"id"`
-	GemName       string    `json:"gem_name"`
+	GemName       string    `json:"gemName"`
 	Description   string    `json:"description"`
 	Instruction   string    `json:"instruction"`
-	GemCategoryID uuid.UUID `json:"gem_category_id"`
+	GemCategoryID uuid.UUID `json:"gemCategoryId"`
 	Coordinates   []float64 `json:"coordinates"`
-	CreatedAt     time.Time `json:"created_at"`
-	UpdatedAt     time.Time `json:"updated_at"`
+	CreatedAt     time.Time `json:"createdAt"`
+	UpdatedAt     time.Time `json:"updatedAt"`
 }
 
 func (h *Handlers) HandlerGemCreate(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		GemName       string    `json:"gem_name"`
+		GemName       string    `json:"gemName"`
 		Description   string    `json:"description"`
 		Instruction   string    `json:"instruction"`
-		GemCategoryID uuid.UUID `json:"gem_category_id"`
+		GemCategoryID uuid.UUID `json:"gemCategoryId"`
 		Coordinates   []float64 `json:"coordinates"`
 	}
 
@@ -142,10 +142,10 @@ func (h *Handlers) HandlerGemDelete(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handlers) HandlerGemUpdate(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		GemName       string    `json:"gem_name"`
+		GemName       string    `json:"gemName"`
 		Description   string    `json:"description"`
 		Instruction   string    `json:"instruction"`
-		GemCategoryID uuid.UUID `json:"gem_category_id"`
+		GemCategoryID uuid.UUID `json:"gemCategoryId"`
 		Coordinates   []float64 `json:"coordinates"`
 	}
 

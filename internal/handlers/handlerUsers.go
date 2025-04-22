@@ -17,8 +17,8 @@ import (
 
 type User struct {
 	ID        uuid.UUID `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 	Email     string    `json:"email"`
 	Username  string    `json:"username"`
 	Token     string    `json:"token,omitempty"`
@@ -100,7 +100,7 @@ func (h *Handlers) HandlerUserLogin(w http.ResponseWriter, r *http.Request) {
 	type response struct {
 		User
 		Token        string `json:"token"`
-		RefreshToken string `json:"refresh_token"`
+		RefreshToken string `json:"refreshToken"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -180,12 +180,12 @@ func (h *Handlers) HandlerUserLogin(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handlers) HandlerRefreshToken(w http.ResponseWriter, r *http.Request) {
 	type request struct {
-		RefreshToken string `json:"refresh_token"`
+		RefreshToken string `json:"refreshToken"`
 	}
 
 	type response struct {
 		Token        string `json:"token"`
-		RefreshToken string `json:"refresh_token"`
+		RefreshToken string `json:"refreshToken"`
 	}
 
 	decoder := json.NewDecoder(r.Body)

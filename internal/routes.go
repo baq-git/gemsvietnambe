@@ -22,7 +22,7 @@ func (app *Application) routes() *httprouter.Router {
 	router.HandlerFunc(http.MethodGet, "/v1/gem_categories", app.HandlerGemCategoriesRetrieve)
 
 	router.HandlerFunc(http.MethodPost, "/v1/gems", app.HandlerGemCreate)
-	router.Handler(http.MethodGet, "/v1/gems", authChain.ThenFunc(app.HandlerGemsRetrieve))
+	router.HandlerFunc(http.MethodGet, "/v1/gems", app.HandlerGemsRetrieve)
 	router.HandlerFunc(http.MethodGet, "/v1/gems/:id", app.HandlerGetGem)
 	router.HandlerFunc(http.MethodDelete, "/v1/gems/:id", app.HandlerGemDelete)
 	router.HandlerFunc(http.MethodPatch, "/v1/gems/:id", app.HandlerGemUpdate)
