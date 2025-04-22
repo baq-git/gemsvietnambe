@@ -49,7 +49,6 @@ func (h *Handlers) HandlerGemCreate(w http.ResponseWriter, r *http.Request) {
 		Coordinates:   params.Coordinates,
 	})
 	if err != nil {
-		logger.Error("Couldn't create gem:", err)
 		h.responser.Response(w, http.StatusInternalServerError, err)
 		return
 	}
@@ -84,6 +83,30 @@ func (h *Handlers) HandlerGemsRetrieve(w http.ResponseWriter, r *http.Request) {
 	logger.Info("Retrieved gems")
 }
 
+func (h *Handlers) HandlerGetGem(w http.ResponseWriter, r *http.Request) {
+	id, err := httputils.ReadIDParams(r)
+	if err != nil {
+		logger.Error("Couldn't read id params", err)
+		h.responser.Response(w, http.StatusBadRequest, err)
+		return
+	}
+
+	gem, err := h.DB.GetGem(r.Context(), id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			logger.Error("Couldn't found resource", err)
+			h.responser.Response(w, http.StatusNotFound, "Gem not found")
+			return
+		}
+		logger.Error("Couldn't found resource", err)
+		h.responser.Response(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	logger.Info("gem deleted")
+	h.responser.Response(w, http.StatusOK, gem)
+}
+
 func (h *Handlers) HandlerGemDelete(w http.ResponseWriter, r *http.Request) {
 	id, err := httputils.ReadIDParams(r)
 	if err != nil {
@@ -106,9 +129,7 @@ func (h *Handlers) HandlerGemDelete(w http.ResponseWriter, r *http.Request) {
 
 	err = h.DB.DeleteGem(r.Context(), gem.ID)
 	if err != nil {
-
 		logger.Error("Couldn't delete resource", err)
-
 		h.responser.Response(w, http.StatusInternalServerError, err)
 		return
 	}

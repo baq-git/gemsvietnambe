@@ -2,9 +2,11 @@ package httputils
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	localErrs "gemsvietnambe/internal/errors"
 	"gemsvietnambe/pkg/logger"
+	"gemsvietnambe/pkg/validator"
 	"net/http"
 	"time"
 )
@@ -29,7 +31,31 @@ type ServerErrorResponse struct {
 	TimeStamp  time.Time     `json:"time_stamp"`
 }
 
+// FailedValidatesRepsone standardizes response with valid failed
+type FailedValidatesRepsone struct {
+	StatusCode int               `json:"status_code"`
+	Errors     map[string]string `json:"error"`
+	TimeStamp  time.Time         `json:"time_stamp"`
+}
+
 type Responser struct{}
+
+func New() *Responser {
+	return &Responser{}
+}
+
+func (r *Responser) FailedValidates(w http.ResponseWriter, statusCode int, v *validator.Validator) {
+	w.Header().Set("Content-Type", "application/json")
+
+	errReponse := localErrs.Err{Messages: v.Errors}.Errors()
+	logger.Error("Validate failed", errors.New(localErrs.ErrValidateFailed))
+	response := FailedValidatesRepsone{
+		StatusCode: statusCode,
+		Errors:     errReponse,
+		TimeStamp:  time.Now().UTC(),
+	}
+	marshallingJSON(w, statusCode, response)
+}
 
 func (r *Responser) Response(w http.ResponseWriter, statusCode int, v interface{}) error {
 	w.Header().Set("Content-Type", "application/json")
@@ -38,6 +64,7 @@ func (r *Responser) Response(w http.ResponseWriter, statusCode int, v interface{
 	if codeClass == 2 {
 		response := SuccessfulResponse{Data: v, Timestamp: time.Now().UTC()}
 		marshallingJSON(w, statusCode, response)
+		logger.Response("Response: ", response)
 		return nil
 	}
 
@@ -48,7 +75,7 @@ func (r *Responser) Response(w http.ResponseWriter, statusCode int, v interface{
 			errResponse.Data = errInfo.Data
 		}
 		response := ClientErrorResponse{StatusCode: statusCode, Error: errResponse, TimeStamp: time.Now().UTC()}
-
+		logger.Error("Client Error Response: ", errResponse)
 		marshallingJSON(w, statusCode, response)
 		return errResponse
 	}
@@ -61,6 +88,7 @@ func (r *Responser) Response(w http.ResponseWriter, statusCode int, v interface{
 			errResponse.Data = errInfo.Data
 		}
 		response := ServerErrorResponse{StatusCode: statusCode, Error: errResponse, TimeStamp: time.Now().UTC()}
+		logger.Error("Server Error Response: ", errResponse)
 		marshallingJSON(w, statusCode, response)
 		return errResponse
 	}
@@ -70,7 +98,7 @@ func (r *Responser) Response(w http.ResponseWriter, statusCode int, v interface{
 }
 
 func marshallingJSON(w http.ResponseWriter, statusCode int, payload interface{}) {
-	dat, err := json.Marshal(payload)
+	dat, err := json.MarshalIndent(payload, "", "\t")
 	if err != nil {
 		logger.Error("Error marshalling JSON: %s", err)
 		return

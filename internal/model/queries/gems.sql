@@ -39,4 +39,5 @@ RETURNING *;
 -- name: GetGem :one
 SELECT *
 FROM gems
-WHERE id = $1;
+    INNER JOIN gem_categories ON gems.gem_category_id = gem_categories.id
+WHERE gems.id = $1;

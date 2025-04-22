@@ -3,10 +3,12 @@ package config
 import "gemsvietnambe/internal/model/database"
 
 type ApiConfig struct {
-	Env     string
-	Port    string
-	Version string
-	DB      *database.Queries
+	Env        string
+	Port       string
+	Version    string
+	SecretKey  string
+	RefreshKey string
+	DB         *database.Queries
 }
 
 const (

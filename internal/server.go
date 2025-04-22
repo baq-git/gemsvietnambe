@@ -3,18 +3,21 @@ package api
 import (
 	"gemsvietnambe/internal/config"
 	"gemsvietnambe/internal/handlers"
-	"gemsvietnambe/pkg/logger"
+	"gemsvietnambe/internal/middleware"
 	"log"
 	"net/http"
 	"time"
 
+	"github.com/justinas/alice"
 	"github.com/rs/cors"
 )
 
 type Application struct {
-	Env     string
-	Port    string
-	Version string
+	Env        string
+	Port       string
+	Version    string
+	SecretKey  string
+	RefreshKey string
 	handlers.Handlers
 }
 
@@ -22,6 +25,8 @@ func (app *Application) Run(apiConfig config.ApiConfig) {
 	app.Env = apiConfig.Env
 	app.Port = apiConfig.Port
 	app.Version = apiConfig.Version
+	app.SecretKey = apiConfig.SecretKey
+	app.RefreshKey = apiConfig.RefreshKey
 	app.DB = apiConfig.DB
 
 	addr := ":" + app.Port
@@ -29,7 +34,13 @@ func (app *Application) Run(apiConfig config.ApiConfig) {
 		addr = "localhost:" + app.Port
 	}
 
-	handler := cors.Default().Handler(app.routes())
+	ctxMap := make(map[string]string)
+	ctxMap[string(middleware.SecretkeyContextK)] = app.SecretKey
+	ctxMap[string(middleware.RefreshkeyContextK)] = app.RefreshKey
+	chain := alice.New(middleware.AddContext(ctxMap))
+
+	cors := cors.Default().Handler(app.routes())
+	handler := chain.Then(cors)
 
 	srv := http.Server{
 		Addr:         addr,
@@ -43,7 +54,4 @@ func (app *Application) Run(apiConfig config.ApiConfig) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	logger.Info("Server is listening...")
-	srv.ListenAndServe()
 }

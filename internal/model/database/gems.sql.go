@@ -7,6 +7,7 @@ package database
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/lib/pq"
@@ -114,14 +115,32 @@ func (q *Queries) GetAllGems(ctx context.Context) ([]Gem, error) {
 }
 
 const getGem = `-- name: GetGem :one
-SELECT id, gem_category_id, gem_name, description, instruction, coordinates, created_at, updated_at
+SELECT gems.id, gem_category_id, gem_name, gems.description, instruction, coordinates, gems.created_at, gems.updated_at, gem_categories.id, category_name, slug, gem_categories.description, gem_categories.created_at, gem_categories.updated_at
 FROM gems
-WHERE id = $1
+    INNER JOIN gem_categories ON gems.gem_category_id = gem_categories.id
+WHERE gems.id = $1
 `
 
-func (q *Queries) GetGem(ctx context.Context, id uuid.UUID) (Gem, error) {
+type GetGemRow struct {
+	ID            uuid.UUID
+	GemCategoryID uuid.UUID
+	GemName       string
+	Description   string
+	Instruction   string
+	Coordinates   []float64
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+	ID_2          uuid.UUID
+	CategoryName  string
+	Slug          string
+	Description_2 string
+	CreatedAt_2   time.Time
+	UpdatedAt_2   time.Time
+}
+
+func (q *Queries) GetGem(ctx context.Context, id uuid.UUID) (GetGemRow, error) {
 	row := q.db.QueryRowContext(ctx, getGem, id)
-	var i Gem
+	var i GetGemRow
 	err := row.Scan(
 		&i.ID,
 		&i.GemCategoryID,
@@ -131,6 +150,12 @@ func (q *Queries) GetGem(ctx context.Context, id uuid.UUID) (Gem, error) {
 		pq.Array(&i.Coordinates),
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ID_2,
+		&i.CategoryName,
+		&i.Slug,
+		&i.Description_2,
+		&i.CreatedAt_2,
+		&i.UpdatedAt_2,
 	)
 	return i, err
 }

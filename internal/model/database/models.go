@@ -30,6 +30,13 @@ type GemCategory struct {
 	UpdatedAt    time.Time
 }
 
+type RefreshToken struct {
+	ID           uuid.UUID
+	RefreshToken string
+	UserID       uuid.UUID
+	Revoked      bool
+}
+
 type User struct {
 	ID           uuid.UUID
 	Username     string

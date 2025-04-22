@@ -14,8 +14,6 @@ import (
 	_ "github.com/lib/pq"
 )
 
-const version = "1.0.0"
-
 func main() {
 	err := logger.Init("info", "stdout")
 	if err != nil {
@@ -29,20 +27,51 @@ func main() {
 		return
 	}
 
+	secretkey := os.Getenv("SECRETKEY")
+	if secretkey == "" {
+		logger.Error("SECRETKEY is not set in .env file", nil)
+		os.Exit(1)
+	}
+
+	refreshkey := os.Getenv("REFRESHKEY")
+	if refreshkey == "" {
+		logger.Error("REFRESHKEY is not set in .env file", nil)
+		os.Exit(1)
+	}
+
+	version := os.Getenv("VERSION")
+	if version == "" {
+		logger.Error("VERSION is not set in .env file", nil)
+	}
+
 	dbURL := os.Getenv("DB_URL")
+	if dbURL == "" {
+		logger.Error("DB_URL is not set in .env file", nil)
+		os.Exit(1)
+	}
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		logger.Error("PORT is not set in .env file", nil)
+		os.Exit(1)
+	}
+
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		logger.Error("Could not connect to db", err)
+		os.Exit(1)
 		return
 	}
 
 	dbQueries := database.New(db)
 
 	config := config.ApiConfig{
-		Env:     strings.ToUpper(os.Getenv("ENV")),
-		Port:    os.Getenv("PORT"),
-		Version: os.Getenv("VERSION"),
-		DB:      dbQueries,
+		Env:        strings.ToUpper(os.Getenv("ENV")),
+		Port:       port,
+		Version:    version,
+		SecretKey:  secretkey,
+		RefreshKey: refreshkey,
+		DB:         dbQueries,
 	}
 
 	server := api.Application{}
