@@ -26,6 +26,7 @@ func (app *Application) routes() *httprouter.Router {
 	router.HandlerFunc(http.MethodGet, "/v1/gems/:id", app.HandlerGetGem)
 	router.HandlerFunc(http.MethodDelete, "/v1/gems/:id", app.HandlerGemDelete)
 	router.HandlerFunc(http.MethodPatch, "/v1/gems/:id", app.HandlerGemUpdate)
+	router.HandlerFunc(http.MethodGet, "/v1/gemslist", app.HandlerGemsList)
 
 	return router
 }

@@ -3,6 +3,7 @@ package httputils
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -21,4 +22,11 @@ func ReadIDParams(r *http.Request) (uuid.UUID, error) {
 		return uuid.Nil, fmt.Errorf("invalid UUID parameter: %w", err)
 	}
 	return id, nil
+}
+
+func ReadListParams(r *http.Request) error {
+	str := r.PathValue("filter")
+	log.Print(str)
+
+	return nil
 }

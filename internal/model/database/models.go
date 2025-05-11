@@ -11,14 +11,15 @@ import (
 )
 
 type Gem struct {
-	ID            uuid.UUID
-	GemCategoryID uuid.UUID
-	GemName       string
-	Description   string
-	Instruction   string
-	Coordinates   []float64
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
+	ID               uuid.UUID
+	GemCategoryID    uuid.UUID
+	GemName          string
+	Description      string
+	Instruction      string
+	Coordinates      []float64
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+	SearchGemsVector interface{}
 }
 
 type GemCategory struct {

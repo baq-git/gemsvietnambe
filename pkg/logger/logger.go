@@ -76,5 +76,5 @@ func Panic(msg string, err error) {
 }
 
 func Response(msg string, v interface{}) {
-	Log.logger.Printf("%s:%v", msg, v)
+	Log.logger.Info().Fields(v)
 }

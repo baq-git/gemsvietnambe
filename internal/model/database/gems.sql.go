@@ -34,7 +34,7 @@ VALUES (
         NOW(),
         NOW()
     )
-RETURNING id, gem_category_id, gem_name, description, instruction, coordinates, created_at, updated_at
+RETURNING id, gem_category_id, gem_name, description, instruction, coordinates, created_at, updated_at, search_gems_vector
 `
 
 type CreateGemParams struct {
@@ -63,6 +63,7 @@ func (q *Queries) CreateGem(ctx context.Context, arg CreateGemParams) (Gem, erro
 		pq.Array(&i.Coordinates),
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.SearchGemsVector,
 	)
 	return i, err
 }
@@ -78,7 +79,7 @@ func (q *Queries) DeleteGem(ctx context.Context, id uuid.UUID) error {
 }
 
 const getAllGems = `-- name: GetAllGems :many
-SELECT id, gem_category_id, gem_name, description, instruction, coordinates, created_at, updated_at
+SELECT id, gem_category_id, gem_name, description, instruction, coordinates, created_at, updated_at, search_gems_vector
 FROM gems
 `
 
@@ -100,6 +101,7 @@ func (q *Queries) GetAllGems(ctx context.Context) ([]Gem, error) {
 			pq.Array(&i.Coordinates),
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.SearchGemsVector,
 		); err != nil {
 			return nil, err
 		}
@@ -115,27 +117,28 @@ func (q *Queries) GetAllGems(ctx context.Context) ([]Gem, error) {
 }
 
 const getGem = `-- name: GetGem :one
-SELECT gems.id, gem_category_id, gem_name, gems.description, instruction, coordinates, gems.created_at, gems.updated_at, gem_categories.id, category_name, slug, gem_categories.description, gem_categories.created_at, gem_categories.updated_at
+SELECT gems.id, gem_category_id, gem_name, gems.description, instruction, coordinates, gems.created_at, gems.updated_at, search_gems_vector, gem_categories.id, category_name, slug, gem_categories.description, gem_categories.created_at, gem_categories.updated_at
 FROM gems
     INNER JOIN gem_categories ON gems.gem_category_id = gem_categories.id
 WHERE gems.id = $1
 `
 
 type GetGemRow struct {
-	ID            uuid.UUID
-	GemCategoryID uuid.UUID
-	GemName       string
-	Description   string
-	Instruction   string
-	Coordinates   []float64
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
-	ID_2          uuid.UUID
-	CategoryName  string
-	Slug          string
-	Description_2 string
-	CreatedAt_2   time.Time
-	UpdatedAt_2   time.Time
+	ID               uuid.UUID
+	GemCategoryID    uuid.UUID
+	GemName          string
+	Description      string
+	Instruction      string
+	Coordinates      []float64
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+	SearchGemsVector interface{}
+	ID_2             uuid.UUID
+	CategoryName     string
+	Slug             string
+	Description_2    string
+	CreatedAt_2      time.Time
+	UpdatedAt_2      time.Time
 }
 
 func (q *Queries) GetGem(ctx context.Context, id uuid.UUID) (GetGemRow, error) {
@@ -150,6 +153,7 @@ func (q *Queries) GetGem(ctx context.Context, id uuid.UUID) (GetGemRow, error) {
 		pq.Array(&i.Coordinates),
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.SearchGemsVector,
 		&i.ID_2,
 		&i.CategoryName,
 		&i.Slug,
@@ -158,6 +162,103 @@ func (q *Queries) GetGem(ctx context.Context, id uuid.UUID) (GetGemRow, error) {
 		&i.UpdatedAt_2,
 	)
 	return i, err
+}
+
+const listingGemsComplex = `-- name: ListingGemsComplex :many
+SELECT g.id AS gem_id,
+    g.gem_name,
+    g.instruction,
+    g.description,
+    g.created_at,
+    g.updated_at,
+    g.gem_category_id,
+    ts_rank(g.search_gems_vector, query) AS rank,
+    gc.category_name,
+    gc.description AS category_description,
+    gc.slug AS category_slug,
+    g.search_gems_vector,
+    query
+FROM gems g
+    CROSS JOIN plainto_tsquery('simple', $1) query
+    INNER JOIN gem_categories gc ON g.gem_category_id = gc.id
+WHERE (
+        (
+            $1 = ''
+            OR g.search_gems_vector @@ query
+        )
+        AND (
+            gc.slug = $2
+            OR $2 = ''
+            OR $2 = 'all'
+        )
+    )
+ORDER BY rank DESC
+LIMIT $3 OFFSET $4
+`
+
+type ListingGemsComplexParams struct {
+	PlaintoTsquery string
+	Slug           string
+	Limit          int32
+	Offset         int32
+}
+
+type ListingGemsComplexRow struct {
+	GemID               uuid.UUID
+	GemName             string
+	Instruction         string
+	Description         string
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
+	GemCategoryID       uuid.UUID
+	Rank                float32
+	CategoryName        string
+	CategoryDescription string
+	CategorySlug        string
+	SearchGemsVector    interface{}
+	Query               interface{}
+}
+
+func (q *Queries) ListingGemsComplex(ctx context.Context, arg ListingGemsComplexParams) ([]ListingGemsComplexRow, error) {
+	rows, err := q.db.QueryContext(ctx, listingGemsComplex,
+		arg.PlaintoTsquery,
+		arg.Slug,
+		arg.Limit,
+		arg.Offset,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListingGemsComplexRow
+	for rows.Next() {
+		var i ListingGemsComplexRow
+		if err := rows.Scan(
+			&i.GemID,
+			&i.GemName,
+			&i.Instruction,
+			&i.Description,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.GemCategoryID,
+			&i.Rank,
+			&i.CategoryName,
+			&i.CategoryDescription,
+			&i.CategorySlug,
+			&i.SearchGemsVector,
+			&i.Query,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const updateGem = `-- name: UpdateGem :one
@@ -169,7 +270,7 @@ SET gem_name = $2,
     gem_category_id = $6,
     updated_at = NOW()
 WHERE id = $1
-RETURNING id, gem_category_id, gem_name, description, instruction, coordinates, created_at, updated_at
+RETURNING id, gem_category_id, gem_name, description, instruction, coordinates, created_at, updated_at, search_gems_vector
 `
 
 type UpdateGemParams struct {
@@ -200,6 +301,7 @@ func (q *Queries) UpdateGem(ctx context.Context, arg UpdateGemParams) (Gem, erro
 		pq.Array(&i.Coordinates),
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.SearchGemsVector,
 	)
 	return i, err
 }

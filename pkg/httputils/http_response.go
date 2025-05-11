@@ -64,7 +64,6 @@ func (r *Responser) Response(w http.ResponseWriter, statusCode int, v interface{
 	if codeClass == 2 {
 		response := SuccessfulResponse{Data: v, Timestamp: time.Now().UTC()}
 		marshallingJSON(w, statusCode, response)
-		logger.Response("Response: ", response)
 		return nil
 	}
 

@@ -39,7 +39,11 @@ func (app *Application) Run(apiConfig config.ApiConfig) {
 	ctxMap[string(middleware.RefreshkeyContextK)] = app.RefreshKey
 	chain := alice.New(middleware.AddContext(ctxMap))
 
-	cors := cors.Default().Handler(app.routes())
+	cors := cors.New(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:3000"},
+		AllowedMethods:   []string{http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodDelete},
+		AllowCredentials: true,
+	}).Handler(app.routes())
 	handler := chain.Then(cors)
 
 	srv := http.Server{
